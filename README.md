@@ -1,6 +1,6 @@
 BACKGROUND
 
-1. In this cafe, customer picks up items first and the receipt is calculated subsequently; 
+1. In this cafe, customer picks up items first and the receipt comprising charge, discount and final price is calculated at checkout counter; 
 2. Scan meal items for calculation of discount if eligible.  
 3. As there can be a wide variation in costs for the same food type, only items below the reasonable cost for that food type is eligible for discounts. 
     For example, Mee Siam comes in Economy ($3), Standard ($4)  and Premium ($5). Only Economy and Standard is eligible for discount.
