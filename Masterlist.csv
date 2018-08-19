@@ -1,0 +1,20 @@
+Code,Item,Ingredient,Food,Cost
+F1,Fried rice for 20 pax Economy,,Fried rice for 20 pax,38
+F2,Fried rice for 20 pax Standard,,Fried rice for 20 pax,40
+F3,Fried rice for 20 pax Premium,,Fried rice for 20 pax,50
+M1,Mee Siam Economy,,Mee Siam,3
+M2,Mee Siam Standard,,Mee Siam,4
+M3,Mee Siam Premium,,Mee Siam,5
+L1,Laksa Economy,,Laksa,5
+L2,Laksa Standard,,Laksa,5.4
+L3,Laksa Premium,,Laksa,6
+N1,Coconut rice Standard,Coconut rice,"Nasi Lemak Chicken Set, Nasi Lemak Fish Set",1
+N2,Coconut rice Premium,Coconut rice,"Nasi Lemak Chicken Set, Nasi Lemak Fish Set",1.5
+N3,Fried Egg Standard,Fried Egg,"Nasi Lemak Chicken Set, Nasi Lemak Fish Set",1
+N4,Fried Egg Premium,Fried Egg,"Nasi Lemak Chicken Set, Nasi Lemak Fish Set",1.5
+N5,Chicken Economy,Chicken,Nasi Lemak Chicken Set,1.5
+N6,Chicken Standard,Chicken,Nasi Lemak Chicken Set,2
+N7,Chicken Premium,Chicken,Nasi Lemak Chicken Set,3
+N8,Fish fillet Economy,Fish fillet,Nasi Lemak Fish Set,2
+N9,Fish fillet Standard,Fish fillet,Nasi Lemak Fish Set,3
+N10,Fish fillet Premium,Fish fillet,Nasi Lemak Fish Set,5
