@@ -21,3 +21,5 @@ The contents of the master list appears in the left-most panel of the app.
 Foodgroupings.csv
 For each food, a reasonable cost cut-off has been determined to facilitate discount for eligible customers. 
 When Food cost exceeds the reasonable cost cut-off, no subsidy is given.
+
+http://rpubs.com/faridisme/413317
