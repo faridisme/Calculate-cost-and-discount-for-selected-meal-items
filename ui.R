@@ -16,13 +16,13 @@ shinyUI(fluidPage(
              h3("AIM OF SHINY APPLICATION"),
              h4("In this cafe, customer picks up items first and the receipt comprising charge, discount and final price is calculated at checkout counter"),
              h4("Item code is input to the app for calculation of discount if eligible"),
-             h3("DESCRIPTION"),
+             h3("DESCRIPTION AND INSTRUCTIONS FOR USE"),
              h4("1. The left-most panel lists the different menu items"),
              h4("2. Once menu items are selected, scan items by entering the item code into the scan forms in the middle panel."),
              h4("- Item codes within a scan form should be delimited by comma ',' (or semicolon ';' or plus symbol '+')"),
              h4("- For accurate subsidy calculation, scan set items (e.g. Nasi Lemak) based on meal sets, i.e. same Nasi Lemak set within same scan and different Nasi Lemak sets in different scans"),
-             h4("3. Receipt and breakdown is updated in the right-most column")
-             
+             h4("3. Receipt and breakdown is updated in the right-most column"),
+             h4("For more details see https://github.com/faridisme/Calculate-cost-and-discount-for-selected-meal-items. Thank you for your feedback")
              ),
     tabPanel("Application",
              # Sidebar with a slider input for number of bins
@@ -59,7 +59,11 @@ shinyUI(fluidPage(
                            h4("Thank you for shopping with us. Enjoy your meal!")
                          )
              )
-             )
+             ),
+    tabPanel("Food eligible for discounts",
+      h4("As there can be a wide variation in costs for the same food type, only items below the reasonable cost for that food type is eligible for discounts. For example, Mee Siam comes in Economy ($3), Standard ($4) and Premium ($5). Only Economy and Standard is eligible for discount."),
+      tableOutput("reasonablecostout")
+    )
   )
   
   
