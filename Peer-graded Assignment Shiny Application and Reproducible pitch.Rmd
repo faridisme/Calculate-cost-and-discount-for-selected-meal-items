@@ -1,0 +1,185 @@
+---
+title: "Calculate cost for meal items"
+author: "Farid"
+date: "19 August 2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## AIM OF SHINY APPLICATION
+
+- In this cafe, customer picks up items first and the receipt comprising charge, discount and final price is calculated at checkout counter using the shiny application
+- Item code is input to the app for calculation of discount if eligible.
+- As there can be a wide variation in costs for the same food type, only items below the reasonable cost for that food type is eligible for discounts. For example, Mee Siam comes in Economy ($3), Standard ($4) and Premium ($5). Only Economy and Standard is eligible for discount.
+
+- Try out the app at <https://faridisme.shinyapps.io/Calculate-subsidy-for-selected-meal-items/>
+
+## DESCRIPTION OF APP
+
+- The app calculates the costs, discount and final price based on the eligible subsidy of the customer.
+
+  1. The left-most panel lists the different menu items.
+  2. Once menu items are selected, scan items by entering the item code into the scan forms in the middle panel.
+    + Item codes within a scan form should be delimited by comma "," (or semicolon ";" or plus symbol "+");
+    + For accurate subsidy calculation, scan set items (e.g. Nasi Lemak) based on meal sets, i.e. same nasi lemak set within same scan and different nasi lemak sets in different scans.
+  3. Receipt and breakdown is updated in the right most column.
+
+
+## SAMPLE RECEIPT OUTPUT
+
+- For customer eligible for 50% discount initialised with the following items.
+ 
+```{r, echo=TRUE, message=FALSE}
+itemlist <- list("M1,L1,F1","N1,N3,N5") 
+sublevel <- 50;
+
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+library(dplyr)
+
+dfml <- read.csv("C:/Users/Farid/Dropbox/academic/Coursera/John Hopkins Specialisation in Data Science Course/Develop data products/Scan_ID/Masterlist.csv", stringsAsFactors = FALSE)
+dffg <- read.csv("C:/Users/Farid/Dropbox/academic/Coursera/John Hopkins Specialisation in Data Science Course/Develop data products/Scan_ID/Foodgroupings.csv", stringsAsFactors = FALSE)
+
+#Expand combinations or part there-of;
+genNewRow <- function(x){
+  y<-dim(x)[1]
+  if(grepl(", ",x[y, c("Ingredient")])){
+    #t <- list(); #initialist t as a list;
+    t<- strsplit(x[y, c("Ingredient")],", ");
+    t <- t[[1]][order(t[[1]])]# Re-arrange ingredients in alphabetical order;
+    for (i in 1:length(t)){
+      combi <- combn(t,i);
+      for (j in 1:dim(combi)[2]){
+        newcombi <- paste(combi[order(combi[,j]),j],collapse=", ")
+        if(exists("savecombi")){
+          savecombi <- c(savecombi, newcombi)
+        } else { savecombi <- newcombi
+        }
+      }
+    }
+    newrow<- data.frame(Food=x[y,c("Food")],
+                        Ingredient=savecombi,
+                        Reasonable.Cost.cut.off=x[y,c("Reasonable.Cost.cut.off")]);
+    rm(savecombi)
+    return(newrow)
+  } else {
+    return(x)
+  }
+}
+for (i in 1:nrow(dffg)){
+  new_dffg_rows <- genNewRow(dffg[i,]);
+  if(i!=1){
+    dffgx <- rbind(dffgx, new_dffg_rows);
+  } else {
+    dffgx <- new_dffg_rows
+  }
+}
+
+#Repeat for each itemlist;
+for (i in 1:length(itemlist)){
+  if(itemlist[[i]][1]=="Nil"|itemlist[[i]][1]==""){next}; #Skip if no inputs;
+  a<-strsplit(itemlist[[i]][1], split="[,;+]+"); #Split based on , or ;
+  df<-data.frame(Code=gsub(" ","",toupper(a[[1]]))); #Remove any white spaces;
+  df$Code <- as.character(df$Code)
+  df <- subset(df,df$Code!="Nil"); #remove 'Nil' items
+  
+  df$sn <- 1:nrow(df);
+  df$Code <- as.character(df$Code);
+  df <- merge(df, dfml, by="Code", all.x=TRUE) #merge with masterlist;
+  df$Item[is.na(df$Item)] <- df$Code[is.na(df$Item)];
+  df$Code<- NULL
+  df$Ingredient[is.na(df$Ingredient)] <- "";
+  df$Food[is.na(df$Food)] <- "Other item not on master list";
+  df$Cost[is.na(df$Cost)] <- 0;
+  
+  #Separate items which are not ingredients;
+  dfsave <- subset(df, df$Ingredient=="");
+  df <- subset(df, df$Ingredient !="");
+      
+  if(nrow(df)>0){
+    #aggregate data frame by combinations 
+    df <- data.frame(df %>% 
+                       summarise(sn=min(sn,na.rm=TRUE),
+                                 Item=paste(Item[order(Ingredient)], collapse=", "),
+                                 Ingredient=paste(unique(Ingredient[order(Ingredient)]), collapse=", "),
+                                 Cost=sum(Cost, na.rm=TRUE)))
+    }
+  #merge with food groupings;
+  df <- merge(df,dffgx, by="Ingredient", all.x=TRUE);
+  df$Reasonable.Cost.cut.off[is.na(df$Reasonable.Cost.cut.off)] <- 0;
+  df$Foodprevious <- NULL;
+  
+  #Rejoin with items which are not ingredients;
+  dfsave$Ingredient <- NULL
+  dfsave <- merge(dfsave,dffgx,by="Food",all.x=TRUE)
+  dfsave$Ingredient[is.na(dfsave$Ingredient)] <- "";
+  dfsave$Reasonable.Cost.cut.off[is.na(dfsave$Reasonable.Cost.cut.off)] <- 0;
+  
+  df <- rbind(dfsave, df);
+  rm(dfsave)
+  
+  #Apply subsidy if under reasonable cost cut-off;
+  df$Subsidy <- ifelse(df$Cost<=df$Reasonable.Cost.cut.off,sublevel/100*df$Cost,0)
+  df$Price <- df$Cost - df$Subsidy
+  
+  #If multiple matches keep row with minimum price
+  if(nrow(df)>0){
+    df <- data.frame(df %>% group_by(sn,Item,Ingredient) %>%
+                       slice(which.min(Price)))
+  }
+  
+  df<-df[,c("sn","Item","Ingredient","Food","Cost","Subsidy","Price")]
+      
+  if(!exists("dftotal")){
+    dftotal<- df;
+    } else{
+      dftotal<- rbind(dftotal,df)
+    }
+}
+if(!exists("dftotal")){
+      dftotal<-data.frame(sn=integer(),Item=character(),Food=character(),Cost=double(), Subsidy=double(), Price=double())
+} else {
+      dftotal$sn <- 1:nrow(dftotal); #Rename serial numbers in ascending order;
+}
+
+tab<- dftotal
+
+str1 <- paste0("- Total charge is $",formatC(sum(tab$Cost, na.rm=TRUE), format="f",digits=2, big.mark=","))
+str2 <- paste0("Customer is eligible for ",formatC(sublevel, format="f",digits=0, big.mark=","),"% discount");
+str3 <- paste0("- Total discount is $",formatC(sum(tab$Subsidy, na.rm=TRUE), format="f",digits=2, big.mark=","));
+str4 <- paste0("- Total price is $",formatC(sum(tab$Price, na.rm=TRUE), format="f",digits=2, big.mark=","));
+str <- paste(str1, str2, str3, str4, sep="\n");
+writeLines(str)
+
+if(nrow(dftotal)>0){
+  # Convert numbers to currency format;
+  dftotal$Cost <- paste0("$",formatC(dftotal$Cost, big.mark=",",format='f', digits=2)); 
+  dftotal$Subsidy <- paste0("$",formatC(dftotal$Subsidy, big.mark=",",format='f', digits=2));
+  dftotal$Price <- paste0("$",formatC(dftotal$Price, big.mark=",",format='f', digits=2));
+  }
+names(dftotal)[names(dftotal)=="Subsidy"]<- "Discount"
+```
+
+
+
+```{r, echo = FALSE, fig.align='center', fig.cap='Receipt Breakdown'}
+print.data.frame(dftotal[,c("Food","Cost","Discount","Price")], row.names=FALSE)
+
+```
+
+## UNDERLYING DATA
+
+- *Masterlist.csv *
++ Master list of items with their costs is found in Masterlist.csv. The contents of the master list appears in the left-most panel of the app.
+
+- *Foodgroupings.csv *
++ For each food, a reasonable cost cut-off has been determined to facilitate discount for eligible customers. When Food cost exceeds the reasonable cost cut-off, no subsidy is given.
+
+- For more details on using R Markdown see <https://github.com/faridisme/Calculate-cost-and-discount-for-selected-meal-items>
+
